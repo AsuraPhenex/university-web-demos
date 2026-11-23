@@ -1,0 +1,68 @@
+name: One-time cinema booking smoke test
+on:
+  push:
+    paths: ['.github/workflows/cinema-booking-smoke.yml']
+  workflow_dispatch:
+jobs:
+  checkout-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exercise seat hold, rejected unpaid booking, simulated payment, ticket and lookup
+        shell: bash
+        run: |
+          node <<'NODE'
+          const API='https://university-cinema-api.onrender.com';
+          const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+          async function req(path,method='GET',body){
+            const response=await fetch(API+path,{method,headers:{'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+            const data=await response.json().catch(()=>({}));
+            return {status:response.status,data};
+          }
+          (async()=>{
+            let moviesResult;
+            for(let attempt=0;attempt<12;attempt++){
+              try {moviesResult=await req('/api/movies');if(moviesResult.status===200)break;}catch(e){}
+              await sleep(12000);
+            }
+            if(moviesResult?.status!==200)throw Error('Catalog not reachable');
+            const movies=moviesResult.data;
+            if(!Array.isArray(movies)||!movies.length)throw Error('Movie catalog empty');
+            let chosen=null;
+            for(const m of movies){
+              const shows=await req('/api/screenings?movieId='+encodeURIComponent(m._id));
+              if(shows.status!==200)continue;
+              for(const show of shows.data){
+                if(new Date(show.startsAt)<new Date(Date.now()+20*60000))continue;
+                const availability=await req('/api/screenings/'+show._id+'/seats');
+                if(availability.status!==200)continue;
+                const seat=availability.data.rows.flatMap(row=>Array.from({length:availability.data.columns},(_,i)=>row+(i+1))).find(x=>!availability.data.occupied[x]);
+                if(seat){chosen={show,seat};break}
+              }
+              if(chosen)break;
+            }
+            if(!chosen)throw Error('No available future seat for booking check');
+            const {show,seat}=chosen;
+            const hold=await req('/api/holds','POST',{screeningId:show._id,seats:[seat]});
+            if(hold.status!==200)throw Error('Hold failed '+JSON.stringify(hold));
+            const params={screeningId:show._id,token:hold.data.token,name:'Автомат шалгалт'};
+            const unpaid=await req('/api/bookings/confirm','POST',params);
+            if(unpaid.status!==409)throw Error('Unpaid booking should be rejected '+JSON.stringify(unpaid));
+            const pending=await req('/api/payments/simulate','POST',{screeningId:show._id,token:hold.data.token,outcome:'pending'});
+            if(pending.status!==200||pending.data.status!=='pending')throw Error('Pending simulation failed');
+            const stillUnpaid=await req('/api/bookings/confirm','POST',params);
+            if(stillUnpaid.status!==409)throw Error('Pending booking should be rejected');
+            const payment=await req('/api/payments/simulate','POST',{screeningId:show._id,token:hold.data.token,outcome:'approved'});
+            if(payment.status!==200||payment.data.status!=='approved')throw Error('Approved simulation failed '+JSON.stringify(payment));
+            const booked=await req('/api/bookings/confirm','POST',params);
+            if(booked.status!==200||!booked.data.code)throw Error('Booking failed '+JSON.stringify(booked));
+            const lookup=await req('/api/bookings/'+booked.data.code);
+            if(lookup.status!==200||!lookup.data.seats.includes(seat))throw Error('Ticket lookup failed '+JSON.stringify(lookup));
+            const after=await req('/api/screenings/'+show._id+'/seats');
+            if(after.data.occupied[seat]!=='booked')throw Error('Seat not marked booked');
+            console.log('PASS: unpaid and pending rejected, simulation approved, booking confirmed, lookup matched, seat marked booked');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
