@@ -36,3 +36,17 @@ jobs:
             exit 1
           }
           echo "Live cinema API health, movie catalog and CORS passed"
+          echo "Checking latest deployed cinema frontend"
+          site="https://university-cinema-site.onrender.com"
+          frontend_ok=0
+          for attempt in {1..12}; do
+            curl --fail --silent --show-error --location --max-time 20 "$site/" -o /tmp/cinema.html || true
+            curl --fail --silent --show-error --location --max-time 20 "$site/app.js" -o /tmp/cinema.js || true
+            if grep -q 'id="paymentOutcome"' /tmp/cinema.html 2>/dev/null && grep -q '/api/payments/simulate' /tmp/cinema.js 2>/dev/null; then
+              frontend_ok=1; break
+            fi
+            echo "Waiting for updated frontend deployment: $attempt"
+            sleep 10
+          done
+          test "$frontend_ok" -eq 1 || { echo "Frontend has not served the new booking checkout yet"; exit 1; }
+          echo "Live frontend payment controls and API code passed"
