@@ -1,0 +1,44 @@
+# One GitHub repository -> three Render services.
+# Changes to each project automatically redeploy only its related service.
+services:
+- type: web
+  name: university-library-demo
+  runtime: static
+  buildCommand: echo "Static library site ready"
+  staticPublishPath: ./library
+  autoDeployTrigger: commit
+  buildFilter:
+    paths:
+    - library/**
+- type: web
+  name: university-cinema-site
+  runtime: static
+  buildCommand: echo "Static cinema site ready"
+  staticPublishPath: ./cinema/client
+  autoDeployTrigger: commit
+  buildFilter:
+    paths:
+    - cinema/client/**
+- type: web
+  name: university-cinema-api
+  runtime: node
+  plan: free
+  rootDir: cinema/api
+  buildCommand: npm install
+  startCommand: npm start
+  healthCheckPath: /health
+  envVars:
+  - key: NODE_ENV
+    value: production
+  - key: MONGODB_URI
+    sync: false
+  - key: MONGODB_DB
+    value: cinema_demo
+  - key: FRONTEND_ORIGIN
+    sync: false
+  - key: ADMIN_TOKEN
+    generateValue: true
+  autoDeployTrigger: commit
+  buildFilter:
+    paths:
+    - cinema/api/**
