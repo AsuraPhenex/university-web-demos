@@ -1,0 +1,25 @@
+name: Cinema API and UI checks
+on:
+  push:
+    paths:
+      - 'cinema/**'
+      - '.github/workflows/cinema-ci.yml'
+  pull_request:
+    paths:
+      - 'cinema/**'
+      - '.github/workflows/cinema-ci.yml'
+jobs:
+  test-cinema:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cinema/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npm test
+      - run: node --check server.js
+      - run: node --check ../client/app.js
