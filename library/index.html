@@ -9,8 +9,8 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><span class="brand-icon">📚</span><div><strong>НОМЫН САН</strong><small>Семинар 2 · Үйл ажиллагаа</small></div></div>
-    <div class="mode-box"><label for="roleMode">Демоны дүр</label><select id="roleMode"><option value="librarian">Номын санч</option><option value="reader">Уншигч</option></select><small>Дүр солих нь жинхэнэ нэвтрэлт биш.</small></div>
+    <div class="brand"><span class="brand-icon">📚</span><div><strong>НОМЫН САН</strong></div></div>
+    <div class="mode-box"><label for="roleMode">Демоны дүр</label><select id="roleMode"><option value="librarian">Номын санч</option><option value="reader">Уншигч</option></select></div>
     <nav aria-label="Үндсэн цэс">
       <button data-page="dashboard" class="active librarian-nav">▣ &nbsp; Хяналтын самбар</button>
       <button data-page="books" class="librarian-nav">▤ &nbsp; Ном ба физик хувь</button>
@@ -20,25 +20,24 @@
       <button data-page="fines" class="librarian-nav">₮ &nbsp; Торгууль / мэдэгдэл</button>
       <button data-page="readerPortal" class="reader-nav" hidden>◉ &nbsp; Миний номын сан</button>
     </nav>
-    <div class="side-note">Сургалтын зориулалттай демо<br>Өгөгдөл зөвхөн энэ браузерт хадгалагдана.<br>Олон хэрэглэгчийн нэгдсэн DB, хамгаалалт, серверийн нөөцлөлт байхгүй.</div>
   </aside>
   <main>
-    <header><div><span class="eyebrow">СИСТЕМИЙН ШИНЖИЛГЭЭ БА ЗОХИОМЖ · СЕМИНАР 2</span><h1 id="pageTitle">Хяналтын самбар</h1></div><div class="header-actions"><span class="pill">● LocalStorage демо</span><button id="reset" class="ghost">Демо өгөгдөл сэргээх</button></div></header>
-    <section class="page active" id="dashboard"><div class="metrics" id="metrics"></div><div class="panel"><div class="panel-head"><h2>Сүүлийн үйл ажиллагаа</h2><span>Бүртгэл, олголт, FIFO хуваарилалт</span></div><div id="activity"></div></div></section>
+    <header><div><h1 id="pageTitle">Хяналтын самбар</h1></div><div class="header-actions"><button id="reset" class="ghost">Демо өгөгдөл сэргээх</button></div></header>
+    <section class="page active" id="dashboard"><div class="metrics" id="metrics"></div><div class="panel"><div class="panel-head"><h2>Сүүлийн үйл ажиллагаа</h2></div><div id="activity"></div></div></section>
     <section class="page" id="books">
-      <div class="panel"><div class="panel-head"><h2>Ном бүртгэх / физик хувь нэмэх</h2><span>Ижил ISBN байвал шинэ гарчиг үүсгэхгүй, нэмэлт хувь бүртгэнэ (S-2, 3a)</span></div>
+      <div class="panel"><div class="panel-head"><h2>Ном бүртгэх / физик хувь нэмэх</h2></div>
         <form id="bookForm" class="form-grid"><label>Номын нэр<input name="title" required minlength="2" maxlength="120" placeholder="Номын нэр"></label><label>Зохиогч<input name="author" required minlength="2" maxlength="100" placeholder="Зохиогч"></label><label>ISBN<input name="isbn" required minlength="10" maxlength="20" placeholder="9780000000000"></label><label>Төрөл<input name="genre" required value="Сургалт"></label><label>Хэвлэгдсэн он<input name="year" type="number" required min="1450" max="2100" value="2024"></label><label>Физик хувийн тоо<input name="count" type="number" min="1" max="100" value="1" required></label><label>Хувийн байршил<input name="location" required value="А1 тавиур"></label><button type="submit">+ Бүртгэх</button></form>
         <input id="bookSearch" class="search" placeholder="Нэр, зохиогч, ISBN-аар хайх..." aria-label="Ном хайх"><div id="booksTable"></div>
       </div>
-      <div class="panel"><div class="panel-head"><h2>Физик хувь бүрийн төлөв</h2><span>Бэлэн / Олгогдсон / Хадгалсан / Гэмтсэн</span></div><div id="copiesTable"></div></div>
+      <div class="panel"><div class="panel-head"><h2>Физик хувь бүрийн төлөв</h2></div><div id="copiesTable"></div></div>
     </section>
-    <section class="page" id="readers"><div class="panel"><div class="panel-head"><h2>Уншигч бүртгэх</h2><span>Давхардлыг утсаар шалгаж, R0001 хэлбэрийн код автоматаар олгоно</span></div><form id="readerForm" class="form-grid"><label>Овог нэр<input name="name" required minlength="2" maxlength="100" placeholder="Овог нэр"></label><label>Утас<input name="phone" required pattern="[0-9]{8}" maxlength="8" placeholder="8 оронтой утас"></label><button type="submit">+ Уншигч бүртгэх</button></form><div id="readersTable"></div></div></section>
-    <section class="page" id="loans"><div class="panel"><div class="panel-head"><h2>Ном олгох</h2><span>Идэвхтэй эрх, төлөгдөөгүй торгууль, хадгалсан эсвэл бэлэн физик хувийг шалгана (S-3)</span></div><form id="loanForm" class="form-grid"><label>Уншигч<select name="readerId" required id="loanReader"></select></label><label>Ном<select name="bookId" required id="loanBook"></select></label><label>Буцаах ёстой өдөр<input name="due" type="date" required></label><button type="submit">Ном олгох</button></form></div><div class="panel"><div class="panel-head"><h2>Олголт / буцаалтын бүртгэл</h2><span>Гэмтсэн номыг бусдад олгохгүй</span></div><div id="loansTable"></div></div></section>
-    <section class="page" id="reservations"><div class="panel"><div class="panel-head"><h2>Ном захиалах</h2><span>Зөвхөн бэлэн хувьгүй үед; дараалал FIFO (S-5)</span></div><form id="reserveForm" class="form-grid"><label>Уншигч<select name="readerId" required id="reserveReader"></select></label><label>Ном<select name="bookId" required id="reserveBook"></select></label><button type="submit">Захиалах</button></form><div id="reserveTable"></div><p class="hint">Хадгалсан хувь <b>3 хоногийн</b> дараа буцаан хуваарилагдана (демоны жишиг хугацаа).</p></div></section>
-    <section class="page" id="fines"><div class="panel"><div class="panel-head"><h2>Хугацаа хэтэрсэн торгууль</h2><span>Жишиг тариф: 500 ₮ / хоног; төлөгдөөгүй бол дахин олгохгүй</span></div><div id="finesTable"></div></div><div class="panel"><div class="panel-head"><h2>Уншигчид илгээсэн мэдэгдэл</h2><span>Захиалга бүртгэгдэх, ном хадгалагдах, хугацаа дуусах</span></div><div id="allNotices"></div></div></section>
+    <section class="page" id="readers"><div class="panel"><div class="panel-head"><h2>Уншигч бүртгэх</h2></div><form id="readerForm" class="form-grid"><label>Овог нэр<input name="name" required minlength="2" maxlength="100" placeholder="Овог нэр"></label><label>Утас<input name="phone" required pattern="[0-9]{8}" maxlength="8" placeholder="8 оронтой утас"></label><button type="submit">+ Уншигч бүртгэх</button></form><div id="readersTable"></div></div></section>
+    <section class="page" id="loans"><div class="panel"><div class="panel-head"><h2>Ном олгох</h2></div><form id="loanForm" class="form-grid"><label>Уншигч<select name="readerId" required id="loanReader"></select></label><label>Ном<select name="bookId" required id="loanBook"></select></label><label>Буцаах ёстой өдөр<input name="due" type="date" required></label><button type="submit">Ном олгох</button></form></div><div class="panel"><div class="panel-head"><h2>Олголт / буцаалтын бүртгэл</h2></div><div id="loansTable"></div></div></section>
+    <section class="page" id="reservations"><div class="panel"><div class="panel-head"><h2>Ном захиалах</h2></div><form id="reserveForm" class="form-grid"><label>Уншигч<select name="readerId" required id="reserveReader"></select></label><label>Ном<select name="bookId" required id="reserveBook"></select></label><button type="submit">Захиалах</button></form><div id="reserveTable"></div></div></section>
+    <section class="page" id="fines"><div class="panel"><div class="panel-head"><h2>Хугацаа хэтэрсэн торгууль</h2></div><div id="finesTable"></div></div><div class="panel"><div class="panel-head"><h2>Уншигчид илгээсэн мэдэгдэл</h2></div><div id="allNotices"></div></div></section>
     <section class="page" id="readerPortal">
-      <div class="panel"><div class="panel-head"><h2>Уншигчийн харах горим</h2><span>Өөрийн олголт, захиалга, мэдэгдэл</span></div><label class="picker">Демо уншигч сонгох<select id="readerIdentity"></select></label><div id="readerSummary" class="info-bar"></div></div>
-      <div class="panel"><div class="panel-head"><h2>Ном хайж, захиалах</h2><span>Ном бэлэн бол номын санчаар олгуулна</span></div><input class="search" id="readerSearch" placeholder="Нэр, зохиогч, ISBN..."><div id="readerBooks"></div></div>
+      <div class="panel"><div class="panel-head"><h2>Уншигчийн харах горим</h2></div><label class="picker">Демо уншигч сонгох<select id="readerIdentity"></select></label><div id="readerSummary" class="info-bar"></div></div>
+      <div class="panel"><div class="panel-head"><h2>Ном хайж, захиалах</h2></div><input class="search" id="readerSearch" placeholder="Нэр, зохиогч, ISBN..."><div id="readerBooks"></div></div>
       <div class="panel"><div class="panel-head"><h2>Миний олголтууд</h2></div><div id="readerLoans"></div></div>
       <div class="panel"><div class="panel-head"><h2>Миний захиалгууд</h2></div><div id="readerReservations"></div></div>
       <div class="panel"><div class="panel-head"><h2>Миний мэдэгдлүүд</h2></div><div id="readerNotices"></div></div>
