@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import {MongoClient,ObjectId} from 'mongodb';
 import {randomBytes,timingSafeEqual} from 'node:crypto';
 import {ROWS,COLS,HOLD_MS,validateSeats,availabilityFilter,holdFilter,activeSeatState} from './logic.js';
+import {DEMO_TITLES,upcomingDemoScreenings} from './schedule.js';
 
 const required=['MONGODB_URI','ADMIN_TOKEN'];
 for(const key of required)if(!process.env[key]){console.error(`Missing ${key}. Set server environment variables.`);process.exit(1)}
@@ -34,4 +35,25 @@ app.post('/api/admin/movies',adminAuth,async(req,res,next)=>{try{let {title,genr
 app.post('/api/admin/screenings',adminAuth,async(req,res,next)=>{try{const movieId=oid(req.body.movieId),startsAt=new Date(req.body.startsAt),price=Number(req.body.price);if(!movieId||isNaN(startsAt)||startsAt<=new Date()||!Number.isInteger(price)||price<1000||price>300000)return bad(res,'Үзвэрийн мэдээлэл буруу');if(!await movies.findOne({_id:movieId}))return bad(res,'Кино олдсонгүй',404);const s={movieId,hall:String(req.body.hall||'Танхим 1').slice(0,50),startsAt,price,seats:{}};const ins=await screenings.insertOne(s);res.status(201).json({...publicScreen(s),_id:ins.insertedId})}catch(e){next(e)}});
 app.use((err,req,res,next)=>{console.error(err);res.status(500).json({error:'Серверийн алдаа. Дараа дахин оролдоно уу.'})});
 async function seed(){await bookings.createIndex({code:1},{unique:true});await screenings.createIndex({startsAt:1,movieId:1});if(await movies.estimatedDocumentCount())return;const data=[{title:'Хотын нууц',genre:'Нууцлаг · Драма',duration:112,description:'Хотын гудамжинд өрнөх нэгэн нууцлаг түүх.',emoji:'🌃',tone:'blue'},{title:'Оддын мөр',genre:'Шинжлэх ухааны зөгнөлт',duration:126,description:'Ирээдүйн ертөнц рүү хийх адал явдал.',emoji:'🌌',tone:'purple'},{title:'Инээмсэглэл',genre:'Гэр бүлийн · Инээдмийн',duration:94,description:'Гэр бүлээрээ үзэх хөгжилтэй кино.',emoji:'🎈',tone:'gold'}].map(m=>({...m,createdAt:new Date()}));const ins=await movies.insertMany(data);let list=[];for(let i=0;i<3;i++)for(let d=0;d<6;d++)for(let hour of [14,18,20]){let t=new Date();let local=new Date(t.getTime()+8*60*60000);let day=new Date(Date.UTC(local.getUTCFullYear(),local.getUTCMonth(),local.getUTCDate()+d,0,0));let y=day.getUTCFullYear(),mo=String(day.getUTCMonth()+1).padStart(2,'0'),dd=String(day.getUTCDate()).padStart(2,'0');let startsAt=new Date(`${y}-${mo}-${dd}T${String(hour).padStart(2,'0')}:00:00+08:00`);if(startsAt>t)list.push({movieId:ins.insertedIds[i],hall:`Танхим ${i+1}`,startsAt,price:i===2?12000:15000,seats:{}})}if(list.length)await screenings.insertMany(list);console.log('Seeded demo movies and showtimes')}
-async function start(){await client.connect();await db.command({ping:1});await seed();const port=Number(process.env.PORT||10000);app.listen(port,'0.0.0.0',()=>console.log(`Cinema API listening on ${port}`))}start().catch(err=>{console.error('Startup failed',err);process.exit(1)});
+async function ensureDemoWeek(){
+  const seeded=await movies.find({title:{$in:DEMO_TITLES}}).toArray();
+  const upcoming=upcomingDemoScreenings(seeded);
+  if(!upcoming.length)return;
+  await screenings.bulkWrite(upcoming.map(item=>({updateOne:{
+    filter:{movieId:item.movieId,hall:item.hall,startsAt:item.startsAt},
+    update:{$setOnInsert:{...item,seats:{}}},upsert:true
+  }})),{ordered:false});
+  console.log('Future demo screenings checked:',upcoming.length);
+}
+async function start(){
+  await client.connect();
+  await db.command({ping:1});
+  await seed();
+  await screenings.createIndex({movieId:1,hall:1,startsAt:1},{unique:true});
+  await ensureDemoWeek();
+  const port=Number(process.env.PORT||10000);
+  app.listen(port,'0.0.0.0',()=>console.log(`Cinema API listening on ${port}`));
+  setInterval(()=>ensureDemoWeek().catch(e=>console.error('Schedule refresh failed',e)),6*60*60*1000).unref();
+}
+start().catch(err=>{console.error('Startup failed',err);process.exit(1)});
+
