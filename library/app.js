@@ -22,7 +22,7 @@ function refreshDueDate(){const el=$('#loanForm [name=due]');if(!el.value){const
 function render() {
   if(reconcile(db))save();
   const loans = activeLoans(db), reservations=db.reservations, currentReader=reader(identity);
-  $('#metrics').innerHTML=[['Номын гарчиг',db.books.length],['Физик хувь',db.copies.length],['Уншигч',db.readers.length],['Идэвхтэй олголт',loans.length]].map(([name,value])=>`<div class="metric"><small>${name}</small><div class="num">${value}</div><small>Семинарын өгөгдөл</small></div>`).join('');
+  $('#metrics').innerHTML=[['Номын гарчиг',db.books.length],['Физик хувь',db.copies.length],['Уншигч',db.readers.length],['Идэвхтэй олголт',loans.length]].map(([name,value])=>`<div class="metric"><small>${name}</small><div class="num">${value}</div></div>`).join('');
   $('#activity').innerHTML=db.activities.slice(0,20).map(x=>`<div class="activity">${date(x.at)} — ${esc(x.message)}</div>`).join('');
   const term=$('#bookSearch').value.toLocaleLowerCase('mn-MN');
   const bookRows = db.books.filter(b=>[b.title,b.author,b.isbn].join(' ').toLocaleLowerCase('mn-MN').includes(term)).map(b=>{
